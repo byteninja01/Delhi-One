@@ -6,7 +6,7 @@
 import { Text as DefaultText, View as DefaultView } from 'react-native';
 
 import Colors from '@/constants/Colors';
-import { useColorScheme } from './useColorScheme';
+import { useSettings } from '@/context/SettingsContext';
 
 type ThemeProps = {
   lightColor?: string;
@@ -20,7 +20,8 @@ export function useThemeColor(
   props: { light?: string; dark?: string },
   colorName: keyof typeof Colors.light & keyof typeof Colors.dark
 ) {
-  const theme = useColorScheme() ?? 'light';
+  const { resolvedTheme } = useSettings();
+  const theme = resolvedTheme ?? 'light';
   const colorFromProps = props[theme];
 
   if (colorFromProps) {
@@ -42,4 +43,28 @@ export function View(props: ViewProps) {
   const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'background');
 
   return <DefaultView style={[{ backgroundColor }, style]} {...otherProps} />;
+}
+
+export function Card(props: ViewProps) {
+  const { style, lightColor, darkColor, ...otherProps } = props;
+  const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'card');
+
+  return (
+    <DefaultView
+      style={[
+        {
+          backgroundColor,
+          borderRadius: 16,
+          padding: 16,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 3,
+        },
+        style
+      ]}
+      {...otherProps}
+    />
+  );
 }

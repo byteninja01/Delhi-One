@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "civic-connect",
-    "slug": "civic-connect",
+    "name": "Suraksha+",
+    "slug": "suraksha-plus",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "civicconnect",
+    "scheme": "suraksha",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {

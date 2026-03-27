@@ -1,0 +1,121 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String   @id @default(uuid())
+  fullName         String
+  email            String   @unique
+  password         String
+  phoneNumber      String?  
+  // Zero-knowledge inspired identity: we store a hash of the verified ID, not the ID itself
+  identityHash     String?  @unique 
+  reputationScore  Int      @default(100)
+  role             Role     @default(CITIZEN)
+  reports          CitizenReport[]
+  emergencies      Emergency[]
+  auditLogs        AuditLog[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model CitizenReport {
+  id            String   @id @default(uuid())
+  content       String
+  mediaUrls     String[]
+  latitude      Float
+  longitude     Float
+  author        User     @relation(fields: [authorId], references: [id])
+  authorId      String
+  // Linking raw reports to the synthesized "Civic Fact"
+  civicFact     CivicFact? @relation(fields: [civicFactId], references: [id])
+  civicFactId   String?
+  confidence    Float    @default(0.0)
+  createdAt     DateTime @default(now())
+}
+
+model CivicFact {
+  id                String       @id @default(uuid())
+  title             String
+  description       String
+  category          String
+  status            FactStatus   @default(UNVERIFIED)
+  confidenceScore   Float        @default(0.0)
+  latitude          Float
+  longitude         Float
+  reports           CitizenReport[]
+  // Accountability Engine fields
+  assignedTo        String?      // Authority ID or Dept
+  slaDeadline       DateTime?
+  escalationLevel   Int          @default(0)
+  isIrreversible    Boolean      @default(false)
+  
+  auditHistory      AuditLog[]
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
+model AuditLog {
+  id                String   @id @default(uuid())
+  timestamp         DateTime @default(now())
+  action            String
+  actorId           String?
+  actor             User?    @relation(fields: [actorId], references: [id])
+  targetFactId      String?
+  targetFact        CivicFact? @relation(fields: [targetFactId], references: [id])
+  previousHash      String?  // Reference to the hash of the previous log entry for the chain
+  currentHash       String   // SHA-256 of (previousHash + action + timestamp + stateData)
+  stateChanges      Json     // Immutable snapshot of what changed
+}
+
+model Emergency {
+  id            String          @id @default(uuid())
+  userId        String
+  user          User            @relation(fields: [userId], references: [id])
+  type          EmergencyType
+  latitude      Float
+  longitude     Float
+  status        EmergencyStatus @default(PENDING)
+  priority      Int             @default(0)
+  isVerified    Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+enum Role {
+  CITIZEN
+  OFFICIAL
+  ADMIN
+}
+
+enum FactStatus {
+  UNVERIFIED
+  VALIDATED
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  DELAYED
+  ESCALATED
+}
+
+enum EmergencyType {
+  MEDICAL
+  FIRE
+  CRIME
+  OTHER
+}
+
+enum EmergencyStatus {
+  PENDING
+  RESPONDED
+  RESOLVED
+  ABUSE_DETECTED
+}
